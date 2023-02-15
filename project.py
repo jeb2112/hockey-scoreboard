@@ -5,7 +5,7 @@ import uuid
 import numpy as np
 from scoreboard import scoreBoard
 from penalty import Penalty
-from misc import Message
+from misc import Message,printList
 
 ##################
 # Project

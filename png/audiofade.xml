@@ -1,0 +1,83 @@
+ <property name="kdenlive:customeffects">&lt;customeffects>
+ &lt;effectgroup id="audiofade" effectcolor="#34ba96" name="audiofade" type="custom">
+  &lt;effect id="fadein" effectcolor="#ec0769" tag="volume" unique="1" kdenlive_info="0/-1/audiofade" type="audio">
+   &lt;name>Fade in&lt;/name>
+   &lt;description>Fade in audio track&lt;/description>
+   &lt;author/>
+   &lt;parameter default="0" value="0" min="0" max="0" name="in" type="fixed">
+    &lt;name/>
+   &lt;/parameter>
+   &lt;parameter default="75" value="15" min="0" max="90000" name="out" type="position">
+    &lt;name>Duration&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="0" value="0" min="0" max="0" name="gain" type="fixed">
+    &lt;name>Start Gain&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="1" value="1" min="1" max="1" name="end" type="fixed">
+    &lt;name>End Gain&lt;/name>
+   &lt;/parameter>
+   &lt;version>2&lt;/version>
+   &lt;version>2&lt;/version>
+  &lt;/effect>
+  &lt;effect id="fadeout" effectcolor="#a34cda" tag="volume" unique="1" kdenlive_info="0/-1/audiofade" type="custom">
+   &lt;name>fadeout&lt;/name>
+   &lt;description>Fade out audio track&lt;/description>
+   &lt;author/>
+   &lt;parameter default="-75" value="8534" min="0" max="0" name="in" type="position">
+    &lt;name>Duration&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="0" value="8549" min="0" max="90000" name="out" type="fixed">
+    &lt;name/>
+   &lt;/parameter>
+   &lt;parameter default="1" value="1" min="1" max="1" name="gain" type="fixed">
+    &lt;name>Start Gain&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="0" value="0" min="0" max="0" name="end" type="fixed">
+    &lt;name>End Gain&lt;/name>
+   &lt;/parameter>
+   &lt;version>2&lt;/version>
+   &lt;version>2&lt;/version>
+  &lt;/effect>
+ &lt;/effectgroup>
+ &lt;effectgroup id="audiofade" effectcolor="#34ba96" name="audiofade" type="custom">
+  &lt;effect id="fadein" effectcolor="#ec0769" tag="volume" unique="1" kdenlive_info="0/-1/audiofade" type="audio">
+   &lt;name>Fade in&lt;/name>
+   &lt;description>Fade in audio track&lt;/description>
+   &lt;author/>
+   &lt;parameter default="0" value="0" min="0" max="0" name="in" type="fixed">
+    &lt;name/>
+   &lt;/parameter>
+   &lt;parameter default="75" value="15" min="0" max="90000" name="out" type="position">
+    &lt;name>Duration&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="0" value="0" min="0" max="0" name="gain" type="fixed">
+    &lt;name>Start Gain&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="1" value="1" min="1" max="1" name="end" type="fixed">
+    &lt;name>End Gain&lt;/name>
+   &lt;/parameter>
+   &lt;version>2&lt;/version>
+   &lt;version>2&lt;/version>
+  &lt;/effect>
+  &lt;effect id="fadeout" effectcolor="#a34cda" tag="volume" unique="1" kdenlive_info="0/-1/audiofade" type="custom">
+   &lt;name>fadeout&lt;/name>
+   &lt;description>Fade out audio track&lt;/description>
+   &lt;author/>
+   &lt;parameter default="-75" value="8534" min="0" max="0" name="in" type="position">
+    &lt;name>Duration&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="0" value="8549" min="0" max="90000" name="out" type="fixed">
+    &lt;name/>
+   &lt;/parameter>
+   &lt;parameter default="1" value="1" min="1" max="1" name="gain" type="fixed">
+    &lt;name>Start Gain&lt;/name>
+   &lt;/parameter>
+   &lt;parameter default="0" value="0" min="0" max="0" name="end" type="fixed">
+    &lt;name>End Gain&lt;/name>
+   &lt;/parameter>
+   &lt;version>2&lt;/version>
+   &lt;version>2&lt;/version>
+  &lt;/effect>
+ &lt;/effectgroup>
+&lt;/customeffects>
+</property>

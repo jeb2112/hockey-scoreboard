@@ -4,10 +4,11 @@ import numpy as np
 from misc import *
 from project import Project
 
-###############
+######
 # main
-##############
+######
 
+# original mode. game recorded single cam as separate clips, starting and stopping at each whistle
 # 1. load clips on video 1, then alternate every 2nd clip onto video 2. load the title page at the start of video2
 # 2. run preprocess to overlap the raw clips.
 # 3. tag the timeline. goal: DMM|opp scorername number. during stop interval
@@ -17,9 +18,15 @@ from project import Project
 # 5. load time clips into project on video 3
 # 6. render at crf=17
 
+# new mode. multiple cams one continuous clip entire game.
+# 1. load clips on video 1,2,3. align clips by the audio.
+# 2. tag the timeline. as above, plus 'w','f' for all whistle faceoffs
+# 3. run makeclock to make the time clips trun ??.mp4 in the project dir
+# 4. load time clips into project on video 4
+# 5. render at crf=17
+
 def main(fname,process,**kwargs):
 
-    import numpy as np
     print("main")
     cwd = os.getcwd()
     kdendir = "/home/jbishop/kdenlive/"

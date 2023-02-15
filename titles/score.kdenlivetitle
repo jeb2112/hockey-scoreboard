@@ -1,0 +1,11 @@
+<kdenlivetitle width="1920" duration="150" height="1080" out="150" LC_NUMERIC="en_CA.UTF-8">
+ <item z-index="0" type="QGraphicsTextItem">
+  <position x="30.55555555555555" y="37.22222222222221">
+   <transform>1,0,0,0,1,0,0,0,1</transform>
+  </position>
+  <content font-color="255,255,255,255" font-outline-color="0,0,0,255" font-pixel-size="70" font-italic="0" font-underline="0" font-weight="50" font="Oxygen-Sans" font-outline="1">%s</content>
+ </item>
+ <startviewport rect="0,0,1920,1080"/>
+ <endviewport rect="0,0,1920,1080"/>
+ <background color="0,0,0,0"/>
+</kdenlivetitle>
