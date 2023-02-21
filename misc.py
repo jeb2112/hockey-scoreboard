@@ -106,7 +106,7 @@ class printList:
     def __init__(self):
         self.printStr=''
     def fScoring(self,fTime,*args):
-        printStr = " "+args[0]+" "+fTime+" "+args[1]+"\n"
+        printStr = " "+args[0]+" "+fTime+" "+"\n"
         return printStr
     def fPenalties(self,fTime,*args):
         (team,time) = re.search('([A-Z]{3})([0-9])',args[0]).group(1,2)
@@ -126,18 +126,18 @@ class printList:
     
     def printList(self,file,pCommand,fList):
         psuffix=['st','nd','rd']
+        pdur = 15 # hardcoded 15 minute period here
         period=0
         pstr=str(period+1)+psuffix[period]
         file.write('\n'+pCommand+'\n'+pstr+' Period\n')
         for fItem in fList:
             (m,s) = divmod(fItem[0],60)
-            # hardcoded 12 minute period here
-            p = m//12
+            p = m//pdur
             if p>period:
                 period=p
                 pstr=str(period+1)+psuffix[period]
                 file.write(pstr+' Period\n')
-            msTime = str(np.mod(m,12))+':'+str(s).rjust(2,'0')
+            msTime = str(np.mod(m,pdur))+':'+str(s).rjust(2,'0')
             printStr = self.pFunc(pCommand,msTime,fItem[1])
             file.write(printStr)
         

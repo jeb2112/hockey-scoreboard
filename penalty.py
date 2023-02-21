@@ -6,15 +6,16 @@ import numpy as np
 ###############
 
 class Penalty():
-    def __init__(self,opp):
-        self.pTime = {'DMM':[],opp:[]}
+    def __init__(self,team,opp):
+        self.opp = opp
+        self.team = team
+        self.pTime = {self.team:[],self.opp:[]}
         self.PP=False
         # these two variables have not much use
         self.PPTeam=None
         self.penaltyTeam=None 
-        self.nP = {'DMM':0,opp:0}
+        self.nP = {self.team:0,self.opp:0}
         self.panelPrefix = "pp"
-        self.opp = opp
         self.panelOffset = 1125
         # self.pState = dict(PPflag=None,PPTeam=None,PenaltyTeam=None,panelPrefix=None)
         
@@ -47,24 +48,24 @@ class Penalty():
         self.updateState()
 
     def updateState(self):
-        if self.nP['DMM'] > self.nP[self.opp]:
-            self.penaltyTeam = 'DMM'
+        if self.nP[self.team] > self.nP[self.opp]:
+            self.penaltyTeam = self.team
             self.PPTeam=self.opp
             self.panelOffset = 1315
-        elif self.nP[self.opp] > self.nP['DMM']:
+        elif self.nP[self.opp] > self.nP[self.team]:
             self.penaltyTeam = self.opp
-            self.PPTeam='DMM'
+            self.PPTeam=self.team
             self.panelOffset = 1125
-        elif self.nP[self.opp] == self.nP['DMM']:
-            self.PPTeam='DMM'
+        elif self.nP[self.opp] == self.nP[self.team]:
+            self.PPTeam=self.team
             self.penaltyTeam=self.opp
             self.panelOffset = 1220 # 4on4 case. 
 
-        if self.nP['DMM'] + self.nP[self.opp] == 1:
+        if self.nP[self.team] + self.nP[self.opp] == 1:
             self.panelPrefix = "pp"
-        elif self.nP['DMM']*self.nP[self.opp] == 1:
+        elif self.nP[self.team]*self.nP[self.opp] == 1:
             self.panelPrefix = "4on4"
-        elif np.abs(self.nP['DMM'] - self.nP[self.opp]) == 2:
+        elif np.abs(self.nP[self.team] - self.nP[self.opp]) == 2:
             self.panelPrefix = "5on3"
-        elif self.nP['DMM'] + self.nP[self.opp] == 3:
+        elif self.nP[self.team] + self.nP[self.opp] == 3:
             self.panelPrefix = "4on3"

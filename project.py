@@ -6,28 +6,36 @@ import numpy as np
 from scoreboard import scoreBoard
 from penalty import Penalty
 from misc import Message,printList
+import warnings
 
 ##################
 # Project
 ##################
         
 class Project():
-    def __init__(self, projectfilename,opp):
-        self.projectdir = projectfilename
-        self.projectname = projectfilename+".kdenlive"
-        self.project = open(self.projectname,'r').readlines()
+    def __init__(self, projectdir,opp):
+        self.projectdir = projectdir
+        self.projectname = os.path.split(self.projectdir)[1]+".kdenlive"
+        self.project = open(os.path.join(self.projectdir,self.projectname),'r').readlines()
+        self.srcdir = '/home/src/tcom'
         self.Tags = dict(goals=[],scorers=[],penalties=[],highlights=[])
         self.playlists = ['playlist3','playlist4']
         self.transitionList = self.parseTransitions() # existing transition numbers
         self.producerIDList = self.parseProducerIDs() # existing producers id
-        self.framerate = 29.97
+        self.framerate = 25 # hard-coded but should get from file
         # times and powerplay attributes should be in scoreboard?
         self.currentTime = 0
         self.trueTime = 0
+        self.pdur = 15 # hard-coded period duration
+        self.res = '1280x720' # for low-res gameON. use '1920x1080' for camcorder
+        self.framerate = 25 # for low-res gameON. use 60 fps on camcorder
         self.opp = opp
-        self.SB = scoreBoard(opp)
-        self.P = Penalty(opp)
+        self.team = 'NYK' # hard-coded
+        self.SB = scoreBoard(self.team,self.opp,self.srcdir,self.projectdir)
+        self.P = Penalty(self.team,self.opp)
         self.guides = self.parseGuides("Guide")
+        self.w = self.parseGuides("w")
+        self.f = self.parseGuides("f")
         self.Tags['Scoring'] = self.parseGuides('goal:')
         self.Tags['Penalties'] = self.parseGuides('penalty:')
         self.Tags['Highlights'] = self.parseGuides('highlight:')
@@ -43,10 +51,10 @@ class Project():
         # even/stop intervals
         cwd = os.getcwd()
         kdendir = "/home/jbishop/kdenlive/"
-        os.chdir(kdendir+self.projectdir)
+        # os.chdir(kdendir+self.projectdir)
 
-        commandS1 = "ffmpeg -loop 1 -s 1920x1080 "
-        commandR1 = "ffmpeg -r 1 -s 1920x1080 "
+        commandS1 = "ffmpeg -loop 1 -r 1 -s " + self.res + " "
+        commandR1 = "ffmpeg -r 1 -s " + self.res + " "
         command2 = "-vcodec png -pix_fmt rgba " 
 
         # should these be self. attributes.
@@ -54,7 +62,10 @@ class Project():
         scorerMessageTime=0
         pIndex,gIndex,hIndex = 0,0,0
         
-        w=self.guides # should be even for odd number of intervals
+        if len(self.guides) == 0:
+            w = [i for p in zip(self.w,self.f) for i in p] # ie first interval is a stop interval
+        else:
+            w=self.guides # should be even for odd number of intervals
         nInterval = len(w)-1 # intervals start and end with stopped clock
         if intervalNum == None:
             intervalNum = range(0,nInterval+1,2)
@@ -64,7 +75,8 @@ class Project():
         self.currentTime=0 # game clock time
         self.trueTime = w[0][0] # video time
         for i in range(0,nInterval+1,2):
-            trunfile = "trun"+str(i).rjust(2,'0')+".mp4"
+            trunfile = os.path.join('trun',"trun"+str(i).rjust(2,'0')+".mp4")
+            trungraphic = os.path.join(self.projectdir,'trun','tpng','t'+str(self.currentTime).rjust(3,'0')+'.png ')
             # process stop interval
             # goal markers should be in a stop interval
             if i in intervalNum:
@@ -84,7 +96,7 @@ class Project():
                 self.SB.addBoardTime(self.currentTime)
 
             c = commandS1
-            c = c + " -t "+str(tstop)+" -i ../tcom/t"+str(self.currentTime).rjust(3,'0')+".png "+ command2 + "trun"+str(i).rjust(2,'0') +".mp4 2> /dev/null"
+            c = c + " -t "+str(tstop)+" -i " + trungraphic + command2 + " " + trunfile + " 2> /dev/null"
             self.trueTime += tstop
             if i in intervalNum:
                 print(c)
@@ -94,7 +106,7 @@ class Project():
             if i < nInterval-2:
                 if 'period' in w[i][1]:
                     self.updatePeriod(w[i])
-                trunfile = "trun"+str(i+1).rjust(2,'0')+".mp4"
+                trunfile = os.path.join('trun','trun'+str(i+1).rjust(2,'0')+'.mp4')
                 if i in intervalNum:
                     if os.path.exists(trunfile):
                         os.system("rm "+trunfile)
@@ -122,8 +134,8 @@ class Project():
                 if i in intervalNum:
                     self.SB.writeTimeFrames(trun,self.currentTime,self.P,SM)
                 c = commandR1
-                c = c + "-start_number " +str(self.currentTime) + " -i ../tcom/t%03d.png -vframes "+ str(trun) + " "
-                c = c + command2 + "trun"+str(i+1).rjust(2,'0') +".mp4 2> /dev/null"
+                c = c + '-start_number ' +str(self.currentTime) + ' -i ' + os.path.join(self.projectdir,'trun','tpng','t%03d.png') + ' -vframes ' + str(trun) + ' '
+                c = c + command2 + trunfile + ' 2> /dev/null'
                 self.currentTime += trun
                 self.trueTime += trun
                 if i in intervalNum:
@@ -165,9 +177,9 @@ class Project():
             except AttributeError:
                 SM = None
             self.SB.incrementScore(self.goals[idx][1])
-            # 12 minute period hard-coded here. make function for this
+            # pdur period hard-coded here. make function for this
             # convert goal time from true time to game time
-            self.goals[idx][0] = self.currentTime + (self.SB.period-1)*12*60
+            self.goals[idx][0] = self.currentTime + (self.SB.period-1)*self.pdur*60
             # if powerplay goal, remove penalty
             # logic for short-handed goal?
             if self.P.PP:
@@ -268,7 +280,8 @@ class Project():
         return fList
         
     # bug: need to check for accidental duplicate tags here
-    def parseGuides(self,ftext):
+    # original format kdenlive 19.something??
+    def parseGuides_19(self,ftext):
         guideTimes=[]
         I=self.project.__iter__()
         for m in I:
@@ -286,6 +299,40 @@ class Project():
                 guideTimes.append([int(round(float(s.group(1)))),sgroup2])
         guideTimes = sorted(guideTimes, key=lambda x: x[0])
         return guideTimes 
+    
+    # new xml project format in kdenilve 22.08
+    def parseGuides(self,ftext):
+        guideTimes=[]
+        gflag = False
+        I=self.project.__iter__()
+        for m in I:
+            if gflag:
+                if re.search('\/property',m): # closing tag for the guides property
+                    if ftext == 'w' and len(guideTimes):
+                        guideTimes.insert(0,[0,'w']) # awkward initialization
+                    break
+                s=re.match('^.*comment\"\:\s\"([A-Za-z0-9\s\:\#\-]*)',m)
+                if s and s.group(1).startswith(ftext): # startswith allows for extra text in the tag but sloppy
+                    # remove keyword : if any
+                    sgroup1=re.sub('^.*\:\s','',s.group(1))
+                    # if 'penalty' in ftext:
+                    # replace opp with actual opponent's text
+                    sgroup1 = re.sub('opp|OPP',self.opp,sgroup1)
+                    # read frame pos next line
+                    m = I.__next__()
+                    s2 = re.match('^.*pos\"\:\s([0-9]{1,6})\,',m)
+                    if s2 is None:
+                        warnings.warn('Failed to match frame pos for guide {}'.format(s.group(1)))
+                        return
+                    guideTimes.append([int(round(float(s2.group(1))/self.framerate)),sgroup1])
+            elif not re.search('guides',m):
+                continue
+            else:
+                gflag = True # now in the guides property of the project file
+
+        guideTimes = sorted(guideTimes, key=lambda x: x[0])
+        return guideTimes 
+
 
     def shiftOverlap(self):
         startShift=0
@@ -403,7 +450,7 @@ class Project():
         file.close()
 
     def getOtherTeam(self,team):
-        if team=='DMM':
+        if team==self.team:
             return self.opp
         else:
-            return 'DMM'
+            return self.team
