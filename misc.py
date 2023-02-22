@@ -125,13 +125,14 @@ class printList:
         return printStr
     
     def printList(self,file,pCommand,fList):
-        psuffix=['st','nd','rd']
+        psuffix=['st','nd','rd','th','th']
         pdur = 15 # hardcoded 15 minute period here
         period=0
         pstr=str(period+1)+psuffix[period]
         file.write('\n'+pCommand+'\n'+pstr+' Period\n')
         for fItem in fList:
             (m,s) = divmod(fItem[0],60)
+            # TODO: this kludge broken by flood intermission. calculate period properly
             p = m//pdur
             if p>period:
                 period=p

@@ -24,6 +24,7 @@ from project import Project
 # all dynamically assembled interim sub-graphics go into trun/tpng dir of the project working directory
 # 1. load clips on video 1,2,3. align clips by the audio.
 # 2. tag the timeline with 'w','f' for each start/stoppage including periods goals and penalties. include period2,3 in 'w' tag for period-ending whistle
+# 2a. tag a dummy 'w' at time 0, and a dummy 'f' at time end.
 # 3. tag goals and penalties separately in between a 'w','f' pair. 
 # 4. run makeclock to make the time clips trun ??.mp4 in the project dir
 # 5. load time clips into project on video 4

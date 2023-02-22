@@ -44,8 +44,6 @@ class Project():
         self.penalties = self.Tags['Penalties']
         self.highlights = self.Tags['Highlights']
 
-    # bug: use of intervalNum starting > 0 doesn't process penalties correctly
-    # eg leaside 09jan18 trun 42,43
     def makeScoreBoard(self,intervalNum=None):
         # optional IntervalNum list of intervals to process, list is
         # even/stop intervals
@@ -63,27 +61,28 @@ class Project():
         pIndex,gIndex,hIndex = 0,0,0
         
         if len(self.guides) == 0:
-            w = [i for p in zip(self.w,self.f) for i in p] # ie first interval is a stop interval
+            w = [i for p in zip(self.w,self.f) for i in p] # includes dummy whistle at time 0, ie first interval is a stop interval
+                                                           # dummy faceoff at time end, last interval also a stop.  
         else:
-            w=self.guides # should be even for odd number of intervals
-        nInterval = len(w)-1 # intervals start and end with stopped clock
+            w=self.guides # old code used plain unlabelled guide for all start stops. to remove.
+        nInterval = len(w)-1 
         if intervalNum == None:
-            intervalNum = range(0,nInterval+1,2)
+            intervalNum = range(0,nInterval,2)
         else:
             if not hasattr(intervalNum,'__iter__'):
                 intervalNum = [intervalNum]
         self.currentTime=0 # game clock time
         self.trueTime = w[0][0] # video time
-        for i in range(0,nInterval+1,2):
+        for i in range(0,nInterval,2):
             trunfile = os.path.join('trun',"trun"+str(i).rjust(2,'0')+".mp4")
             trungraphic = os.path.join(self.projectdir,'trun','tpng','t'+str(self.currentTime).rjust(3,'0')+'.png ')
             # process stop interval
-            # goal markers should be in a stop interval
             if i in intervalNum:
                 if os.path.exists(trunfile):
                     os.system("rm "+trunfile)
             tstop = (w[i+1][0]-w[i][0])
-            # check for goal in current stop interval. goals are flagged in stops.
+            # check for goal in current stop interval.
+            # goal markers should be flagged in a stop interval
             if gIndex < len(self.goals):
                 gIndex,SM = self.checkGoal(tstop,gIndex)
             # check for start of a new powerplay, must be flagged in a stop interval
@@ -103,7 +102,7 @@ class Project():
                 os.system(c)
 
             # run interval
-            if i < nInterval-2:
+            if i < nInterval-1:
                 if 'period' in w[i][1]:
                     self.updatePeriod(w[i])
                 trunfile = os.path.join('trun','trun'+str(i+1).rjust(2,'0')+'.mp4')
@@ -119,7 +118,6 @@ class Project():
                 # score message now created in checkGoal
                 # ultimately should play for 3 seconds starting 1sec
                 # into the stop interval
-                    
 
                 if self.scorers:
                     if np.searchsorted([self.trueTime,self.trueTime+trun],self.scorers[0][0])==1:
@@ -132,7 +130,10 @@ class Project():
                 if hIndex < len(self.highlights):
                     hIndex = self.checkHighlight(trun,hIndex)
                 if i in intervalNum:
-                    self.SB.writeTimeFrames(trun,self.currentTime,self.P,SM)
+                    doboard = True
+                else:
+                    doboard = False
+                self.SB.writeTimeFrames(trun,self.currentTime,self.P,SM,doboard)
                 c = commandR1
                 c = c + '-start_number ' +str(self.currentTime) + ' -i ' + os.path.join(self.projectdir,'trun','tpng','t%03d.png') + ' -vframes ' + str(trun) + ' '
                 c = c + command2 + trunfile + ' 2> /dev/null'
@@ -159,7 +160,7 @@ class Project():
         if np.searchsorted([self.trueTime,self.trueTime+tstop],self.penalties[idx][0])==1:
         # time in min is suffix of the text
             self.P.add(self.penalties[idx][1],self.currentTime)
-            self.penalties[idx][0] = self.currentTime + (self.SB.period-1)*12*60
+            self.penalties[idx][0] = self.currentTime + (self.SB.period-1)*self.pdur*60
             idx += 1
         return idx
 
@@ -170,6 +171,7 @@ class Project():
             # self.goals[][1]. not working yet.
             # the goals do tally correctly though.
             # and to move goals,penalties into one dict
+            SM = None
             try:
                 scoreTeam,scoreMessage = re.search('^([A-Z]{2,4})\s(.*)$',self.goals[idx][1]).group(1,2)
                 SM = Message(scoreMessage,3)
@@ -308,8 +310,6 @@ class Project():
         for m in I:
             if gflag:
                 if re.search('\/property',m): # closing tag for the guides property
-                    if ftext == 'w' and len(guideTimes):
-                        guideTimes.insert(0,[0,'w']) # awkward initialization
                     break
                 s=re.match('^.*comment\"\:\s\"([A-Za-z0-9\s\:\#\-]*)',m)
                 if s and s.group(1).startswith(ftext): # startswith allows for extra text in the tag but sloppy

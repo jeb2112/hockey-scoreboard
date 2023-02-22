@@ -90,12 +90,17 @@ class scoreBoard():
             panelOffset = 1125
         elif penalty.penaltyTeam == self.team:
             panelOffset = 1315
-        if penalty.panelPrefix == '4on4':
+        if penalty.pState == '4on4':
             panelOffset = 1220 # 4on4 case
+        # c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
+        # \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
+        # \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
+        # \( png/tpng2/pp"+str(penalty.pTime[penalty.penaltyTeam][0]).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
+        # -background transparent -flatten "+ self.wdir+ "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
-        \( logo/"+penalty.panelPrefix+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
-        \( png/tpng2/pp"+str(penalty.pTime[penalty.penaltyTeam][0]).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
+        \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
+        \( png/tpng2/pp"+str(penalty.pStateTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
         -background transparent -flatten "+ self.wdir+ "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
         os.system(c2)
         os.chdir(self.wdir)
@@ -125,11 +130,13 @@ class scoreBoard():
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) "
         if penalty is not None:
             if penalty.PP:
-                c2 += " \( logo/"+penalty.panelPrefix+penalty.PPTeam+".png -resize 37% -repage +"+str(penalty.panelOffset)+"+59 \) \
-                \( png/tpng2/pp"+str(penalty.pTime[penalty.penaltyTeam][0]).rjust(3,'0')+".png -resize 50% -repage +"+str(penalty.panelOffset+120)+"+54 \) "
+                # c2 += " \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(penalty.panelOffset)+"+59 \) \
+                # \( png/tpng2/pp"+str(penalty.pTime[penalty.penaltyTeam][0]).rjust(3,'0')+".png -resize 50% -repage +"+str(penalty.panelOffset+120)+"+54 \) "
+                c2 += " \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(penalty.panelOffset)+"+59 \) \
+                \( png/tpng2/pp"+str(penalty.pStateTime).rjust(3,'0')+".png -resize 50% -repage +"+str(penalty.panelOffset+120)+"+54 \) "
         # need a check for this to override a penalty panel
         if scoreMessage is not None:
-            if scoreMessage.mTime:
+            if scoreMessage.mTime and len(scoreMessage.Msg):
                 c1 = "convert logo/scorePanel.png -fill white \
             -pointsize 46 -annotate +40+50 \'" + scoreMessage.Msg + "\' \
             -blur 0x1 " + self.wdir + "/trun/tpng/scorePanelAnno.png"
@@ -141,11 +148,12 @@ class scoreBoard():
 
 
     # for run interval
-    def writeTimeFrames(self,trun,currentTime,penalty,scoreMessage=None):
+    def writeTimeFrames(self,trun,currentTime,penalty,scoreMessage=None,doboard=True):
         for t in range(currentTime,currentTime+trun):
+            if doboard:
+                self.buildBoard(t,penalty,scoreMessage)
             if penalty.PP:
                 penalty.update()
-            self.buildBoard(t,penalty,scoreMessage)
             if scoreMessage is not None:
-                if scoreMessage.Msg is not None:
+                if scoreMessage.Msg:
                     scoreMessage.update()
