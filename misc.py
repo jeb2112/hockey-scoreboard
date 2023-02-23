@@ -6,6 +6,8 @@ import numpy as np
 # miscellaneous classes
 #######################
 
+# intended to run in conjunction with a gameON stream instead of using bash ffmpeg command line directly
+# not finished yet
 class screenCapture():
     def __init__(self,duration,cameraNumber,outdir):
         self.duration = duration # seconds
@@ -32,6 +34,7 @@ class screenCapture():
         print(command)
         os.system(command)
         
+# for generating fixed graphics of temporal numerals. run one-time only
 class timeNumeral():
     # passing output directory like this is awkward 
     def __init__(self,outputdir,time=None):
@@ -82,12 +85,8 @@ class timeNumeral():
                 command = "convert -size 122x68 -font DejaVu-Sans-Bold -pointsize 32 -fill white -channel RGBA xc:transparent -annotate +7+47 '" + tstr + "' -gaussian-blur 1x1  " +self.outdir + "/pp"+fstr + ".png"
                 # print command
                 os.system(command)
-        
-# for tidying up the system commands    
-class ffParams():
-    def __init__(self,**kwargs):
-        pass
 
+# a text string and an associated amount of time to display it
 class Message():
     def __init__(self,msg,time):
         self.Msg=msg
@@ -97,11 +96,16 @@ class Message():
         self.mTime -= 1
         if self.mTime==0:
             self.Msg=None
+
+# create a text string on a transparent background
+class TextMessage():
+    pass
+
         
 # convenience class of functions for creating game summary
 # just an exercise in using a class __dict__ would be
 # better as an ordinary dict.
-# not working in partial range makeclock, or at all
+# mostly working but not quite debugged
 class printList:
     def __init__(self):
         self.printStr=''
@@ -142,10 +146,6 @@ class printList:
             printStr = self.pFunc(pCommand,msTime,fItem[1])
             file.write(printStr)
         
-# create a text string on a transparent background
-class TextMessage():
-    pass
-
 # use a kdenlive title page
 class Title():
     def __init__(self,fname):
@@ -179,6 +179,8 @@ class Transition():
     def __str__(self):
         return ''.join(self.transition)
         
+# for automatically inserting transitions in a kdenlive project from separate clips of each play action
+# no longer needed in new mode of continuous clips
 class Dissolve(Transition):
     def __init__(self,fname):
         self.transition=open(fname).readlines()
@@ -201,7 +203,9 @@ class Dissolve(Transition):
     def setOutIn(self,out,inn):
         self.transition[0] = re.sub('out="[0-9]+','out="'+str(out),self.transition[0])
         self.transition[0] = re.sub('in="[0-9]+','in="'+str(inn),self.transition[0])
-        
+
+# for automatically inserting transitions in a kdenlive project from separate clips of each play action
+# no longer needed in new mode of continuous clips      
 class audioFade(Transition):
     def __init__(self,fname_fade,fname_filter):
         self.audioFilter=open(fname_filter,'r').readlines()

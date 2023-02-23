@@ -7,14 +7,15 @@ import numpy as np
 
 class scoreBoard():
     def __init__(self,team,opp,sdir,wdir,res='1920x1080'):
-        self.dmScore = 0
+        self.teamScore = 0 # goals for
+        self.oppScore = 0 # goals against
         self.opp = opp
         self.team = team
-        self.res = res
-        self.oppScore = 0
-        self.period = 1
-        self.wdir = wdir # working output dir
-        self.sdir = sdir # source directory with team logos etc
+        self.res = res # '1920x1080' or lower video resolution 
+        self.period = 1 # period number is 1-based
+        self.wdir = wdir # project (working) directory with source clips
+        self.sdir = sdir # source code directory with team logos, fixed sub-graphics etc
+        self.xoff = 360 # hard-coded x offset for scoreboard crop to low-res video, or None for default
         self.pwd = os.getcwd()
         self.makeStaticBoard()
         
@@ -24,7 +25,7 @@ class scoreBoard():
         # note spaces at brackets.
         # note a space after the line break backslash gets interpreted
         # as an extra newline which breaks the string
-        # offsets are currently hard-coded for 1920x1080
+        # these offsets are currently hard-coded for 1920x1080. cropRes method can be used for low-res video
         c4 = """convert -size """ + '1920x1080' + """ xc:transparent \
         \( box4.png -resize 50% -repage +1508+18 \) \
         \( 1ST.png -resize 50% -repage +1511+21 \) \
@@ -47,16 +48,11 @@ class scoreBoard():
         os.chdir(os.path.join(self.sdir,'logo'))
         # change score
         if team.startswith(self.team):
-            self.dmScore += 1
-        # note previously hard-coded lower case opp. 
-        # changing parseGuide to sub actual opponent text from Project.opp
-        # attribute
-        # elif team == "opp":
+            self.teamScore += 1
         elif team == self.opp:
             self.oppScore +=1 
-        kdendir = "/home/jbishop/kdenlive/"
         c3 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
-        \( "+str(self.dmScore)+".png -resize 50% -repage +1266+21 \) \
+        \( "+str(self.teamScore)+".png -resize 50% -repage +1266+21 \) \
         \( "+str(self.oppScore)+".png -resize 50% -repage +1324+21 \) \
         -background transparent -flatten "+self.wdir+"/trun/staticScoreBoard.png"
         os.system(c3)
@@ -96,17 +92,13 @@ class scoreBoard():
             panelOffset = 1315
         if penalty.pState == '4on4':
             panelOffset = 1220 # 4on4 case
-        # c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
-        # \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
-        # \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
-        # \( png/tpng2/pp"+str(penalty.pTime[penalty.penaltyTeam][0]).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
-        # -background transparent -flatten "+ self.wdir+ "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
         \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
         \( png/tpng2/pp"+str(penalty.pStateTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
         -background transparent -flatten "+ tfilename
         os.system(c2)
+        # optionally crop the finished graphic for low-res video
         if int(self.res.split('x')[0]) < 1920:
             self.cropRes(tfilename)
         os.chdir(self.wdir)
@@ -127,6 +119,7 @@ class scoreBoard():
         \( " + self.wdir + "/trun/tpng/pp"+str(ppTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
         -background transparent -flatten "+ tfilename
         os.system(c2)
+        # optionally crop the finished graphic for low-res video
         if int(self.res.split('x')[0]) < 1920:
             self.cropRes(tfilename)
         os.chdir(self.wdir)
@@ -154,12 +147,13 @@ class scoreBoard():
                 c2 += " \( " + self.wdir + "/trun/tpng/scorePanelAnno.png -resize 37% -repage +1125+59 \) "
         c2 += " -background transparent -flatten "+ tfilename
         os.system(c2)
+        # optionally crop the finished graphic for low-res video
         if int(self.res.split('x')[0]) < 1920:
             self.cropRes(tfilename)
         os.chdir(self.wdir)
 
-
-    # for run interval
+    # main method for building a set of scoreboard graphics per each second of a play
+    # interval
     def writeTimeFrames(self,trun,currentTime,penalty,scoreMessage=None,doboard=True):
         for t in range(currentTime,currentTime+trun):
             if doboard:
@@ -170,10 +164,13 @@ class scoreBoard():
                 if scoreMessage.Msg:
                     scoreMessage.update()
 
-    # spacing and positioning above is all hard-coded for hidef. optional crop for low-res < hidef video
+    # spacing and positioning above is all hard-coded for hidef video. optional crop for low-res < hidef video
     def cropRes(self,fname):
         xres,yres = self.res.split('x')
-        xoff = str(int((1920 - int(xres)) * 0.8)) # hard-coded offset for the crop
+        if self.xoff is None:
+            xoff = str(int((1920 - int(xres)) * 0.8)) # a default offset for the crop
+        else:
+            xoff = str(self.xoff) # user offset for crop
         c2 = 'convert -crop ' + self.res  + '+' + xoff + '+0 ' + fname + ' ' + fname
         os.system(c2)
 

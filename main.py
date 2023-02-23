@@ -47,12 +47,15 @@ def main(datadir,process,**kwargs):
         return
     os.chdir(datadir)
 
+    # run once per installation. hasn't been re-tested since new directory structure
     if process == 'makenumeral':
         tN=timeNumeral(0,'/home/src/tcom/tpng/')
         # if numeral == None:
         tN.makeTimeAll(kdendir+'/tcom/tpng/')
         #else:
         #    timeNumeral.makeTimeNumeral(numeral)
+
+    # intended to replace cli usage of ffmpeg. not finished
     elif process == 'grabfootage':
         duration=kwargs['duration']
         cameraNumber=kwargs['cameraNumber']
@@ -61,6 +64,7 @@ def main(datadir,process,**kwargs):
         sc=screenCapture()
         sc.runCapture()
 
+    # old code for separate clips per play action
     # currently running this with the project file placed in
     # ~/kdenlive/iceraiders_03feb8/iceraiders_03fen18.kdenlive
     # note that %run ipython command line doesn't require quotes
@@ -83,14 +87,13 @@ def main(datadir,process,**kwargs):
         project.addTransitions(di)
         project.saveProject()
         return
-    # if using interval numbers give the begin end intervals,
+    
+    # main option for building score clock
+    # if using specified interval numbers give the begin and end intervals,
     # where the beginning is a stop interval (ie even, intervals
     # are zero-based numbering)
-    # %run -m tcom 'iceraiders_03feb18 makeclock' 8 11
-    # pdb.runcall(tcom.main,'iceraiders_03feb18','makeclock',**dict(opp='SCR',intervalNum=range(10,11)))
     elif process == 'makeclock':
         project = Project(datadir,kwargs['opp'])
-
         project.makeScoreBoard(kwargs['intervalNum'])
         project.createSummary()
         project.saveProject()
