@@ -25,7 +25,7 @@ class scoreBoard():
         # note a space after the line break backslash gets interpreted
         # as an extra newline which breaks the string
         # offsets are currently hard-coded for 1920x1080
-        c4 = """convert -size """ + self.res + """ xc:transparent \
+        c4 = """convert -size """ + '1920x1080' + """ xc:transparent \
         \( box4.png -resize 50% -repage +1508+18 \) \
         \( 1ST.png -resize 50% -repage +1511+21 \) \
         \( box3.png -resize 50% -repage +1320+18 \) \
@@ -74,10 +74,13 @@ class scoreBoard():
     # write a single time frame clock
     def addBoardTime(self,time):
         os.chdir(self.sdir)
+        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
-        -background transparent -flatten "+ self.wdir + "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
+        -background transparent -flatten "+ tfilename
         os.system(c2)
+        if int(self.res.split('x')[0]) < 1920:
+            self.cropRes(tfilename)
         os.chdir(self.wdir)
 
     # write a single time frame clock, with power play clock
@@ -86,6 +89,7 @@ class scoreBoard():
     def addBoardTimePPNew(self,time,penalty):
         # print "addBoardTime: ",time
         os.chdir(self.sdir)
+        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
         if penalty.PPTeam == self.team:
             panelOffset = 1125
         elif penalty.penaltyTeam == self.team:
@@ -101,14 +105,17 @@ class scoreBoard():
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
         \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
         \( png/tpng2/pp"+str(penalty.pStateTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
-        -background transparent -flatten "+ self.wdir+ "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
+        -background transparent -flatten "+ tfilename
         os.system(c2)
+        if int(self.res.split('x')[0]) < 1920:
+            self.cropRes(tfilename)
         os.chdir(self.wdir)
 
     # write a single time frame clock, with power play clock
     # should call from addBOardTime instead of duplicating
     def addBoardTimePP(self,time,ppTeam=None,ppTime=None):
         os.chdir(self.sdir)
+        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
         if ppTeam == self.team:
             panelOffset = 1125
         else:
@@ -118,14 +125,17 @@ class scoreBoard():
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
         \( logo/pp"+ppTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
         \( " + self.wdir + "/trun/tpng/pp"+str(ppTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
-        -background transparent -flatten "+ self.wdir + "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
+        -background transparent -flatten "+ tfilename
         os.system(c2)
+        if int(self.res.split('x')[0]) < 1920:
+            self.cropRes(tfilename)
         os.chdir(self.wdir)
 
     # replacement to handle both penalty and regular
     # need to use for stop interval as well
     def buildBoard(self,time,penalty=None,scoreMessage=None):
         os.chdir(self.sdir)
+        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) "
         if penalty is not None:
@@ -142,8 +152,10 @@ class scoreBoard():
             -blur 0x1 " + self.wdir + "/trun/tpng/scorePanelAnno.png"
                 os.system(c1)
                 c2 += " \( " + self.wdir + "/trun/tpng/scorePanelAnno.png -resize 37% -repage +1125+59 \) "
-        c2 += " -background transparent -flatten "+ self.wdir+ "/trun/tpng/t"+str(time).rjust(3,'0')+".png"
+        c2 += " -background transparent -flatten "+ tfilename
         os.system(c2)
+        if int(self.res.split('x')[0]) < 1920:
+            self.cropRes(tfilename)
         os.chdir(self.wdir)
 
 
@@ -157,3 +169,11 @@ class scoreBoard():
             if scoreMessage is not None:
                 if scoreMessage.Msg:
                     scoreMessage.update()
+
+    # spacing and positioning above is all hard-coded for hidef. optional crop for low-res < hidef video
+    def cropRes(self,fname):
+        xres,yres = self.res.split('x')
+        xoff = str(int((1920 - int(xres)) * 0.8)) # hard-coded offset for the crop
+        c2 = 'convert -crop ' + self.res  + '+' + xoff + '+0 ' + fname + ' ' + fname
+        os.system(c2)
+

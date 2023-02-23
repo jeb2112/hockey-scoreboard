@@ -31,7 +31,7 @@ class Project():
         self.framerate = 25 # for low-res gameON. use 60 fps on camcorder
         self.opp = opp
         self.team = 'NYK' # hard-coded
-        self.SB = scoreBoard(self.team,self.opp,self.srcdir,self.projectdir)
+        self.SB = scoreBoard(self.team,self.opp,self.srcdir,self.projectdir,res=self.res)
         self.P = Penalty(self.team,self.opp)
         self.guides = self.parseGuides("Guide")
         self.w = self.parseGuides("w")
