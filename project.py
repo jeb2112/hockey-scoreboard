@@ -5,7 +5,7 @@ import uuid
 import numpy as np
 from scoreboard import scoreBoard
 from penalty import Penalty
-from misc import Message,printList
+from misc import Message,printList,Constants
 import warnings
 
 ##################
@@ -28,11 +28,12 @@ class Project():
         self.trueTime = 0 # video time, including all delays etc
         self.pdur = 15 # hard-coded period duration
         self.res = '1280x720' # for low-res gameON. use '1920x1080' for camcorder
-        self.framerate = 25 # for low-res gameON. use 60 fps on camcorder
         self.opp = opp
         self.team = 'NYK' # hard-coded
-        self.SB = scoreBoard(self.team,self.opp,self.srcdir,self.projectdir,res=self.res)
-        self.P = Penalty(self.team,self.opp)
+        self.C = Constants(self.opp)
+        self.SB = scoreBoard(self.team,self.opp,self.srcdir,self.projectdir,self.C)
+        self.P = Penalty(self.team,self.opp,self.C)
+        self.M = [] # optional list of highlight messages
         self.w = self.parseGuides("w")
         self.f = self.parseGuides("f")
         self.Tags['Scoring'] = self.parseGuides('goal:')
@@ -83,7 +84,7 @@ class Project():
                     os.system("rm "+trunfile)
             tstop = (w[i+1][0]-w[i][0])
             # check for goal in current stop interval.
-            # goal markers should be flagged in a stop interval
+            # goal markers should be only flagged in a stop interval
             if gIndex < len(self.goals):
                 gIndex,SM = self.checkGoal(tstop,gIndex)
             # check for start of a new powerplay, must be flagged in a stop interval
@@ -113,13 +114,9 @@ class Project():
                     if os.path.exists(trunfile):
                         os.system("rm "+trunfile)
                 trun = (w[i+2][0]-w[i+1][0])
-                # check for scorer message. will be flagged in a
-                # run interval by convention.
-                # converting this to process scorer from Tags['goals']
-                # score message now created in checkGoal below
 
-                # check for highlight message. will be flagged in a
-                # run interval by convention. not finished yet.
+                # check for highlight message. will only be flagged in a
+                # run interval by convention.
                 if hIndex < len(self.highlights):
                     hIndex = self.checkHighlight(trun,hIndex)
 
@@ -129,7 +126,8 @@ class Project():
                 else:
                     doboard = False
                 # build the individual per-second clock graphics
-                self.SB.writeTimeFrames(trun,self.currentTime,self.P,SM,doboard)
+                # TODO: resolve score message, highlight messages into one arg
+                self.SB.writeTimeFrames(trun,self.currentTime,self.P,SM,self.M,doboard)
 
                 c = commandR1
                 c = c + '-start_number ' +str(self.currentTime) + ' -i ' + os.path.join(self.projectdir,'trun','tpng','t%03d.png') + ' -vframes ' + str(trun) + ' '
@@ -157,7 +155,7 @@ class Project():
         if np.searchsorted([self.trueTime,self.trueTime+tstop],self.penalties[idx][0])==1:
         # time in min is suffix of the text
             self.P.add(self.penalties[idx][1],self.currentTime)
-            self.penalties[idx][0] = self.currentTime + (self.SB.period-1)*self.pdur*60
+            self.penalties[idx][0] = self.currentTime + (self.SB.period-1)*self.C.pdur*60
             idx += 1
         return idx
 
@@ -168,14 +166,14 @@ class Project():
             SM = None
             try:
                 scoreTeam,scoreMessage = re.search('^([A-Z]{2,4})\s(.*)$',self.goals[idx][1]).group(1,2)
-                SM = Message(scoreMessage,3)
+                SM = Message(scoreMessage,mtime=3,xoff=self.C.paneloffsets[scoreTeam])
                 self.goals[idx][1] = scoreTeam
             except AttributeError:
                 SM = None
             self.SB.incrementScore(self.goals[idx][1])
             # pdur period hard-coded above, make an input arg
             # convert goal time from true time to game time
-            self.goals[idx][0] = self.currentTime + (self.SB.period-1)*self.pdur*60
+            self.goals[idx][0] = self.currentTime + (self.SB.period-1)*self.C.pdur*60
             # if powerplay goal, remove penalty
             if self.P.PP:
                 self.P.remove(self.getOtherTeam(self.goals[idx][1]))
@@ -186,9 +184,24 @@ class Project():
 
     # messages other than goals or penalties. not tested yet.
     def checkHighlight(self,trun,idx):
-        if np.searchsorted([self.trueTime,self.trueTime+trun],self.highlights[idx][0])==1:
-            self.highlights[idx][0] = self.currentTime + (self.SB.period-1)*12*60
-            idx += 1
+        while idx < len(self.highlights):
+            if np.searchsorted([self.trueTime,self.trueTime+trun],self.highlights[idx][0])==1:
+                try:
+                    team,message = re.search('^([A-Z]{2,4})\s(.*)$',self.highlights[idx][1]).group(1,2)
+                except AttributeError:
+                    team='none'
+                    message=None
+                # offset into current run interval
+                toff = self.highlights[idx][0] - self.trueTime
+                # absolute game time
+                gtime = self.currentTime + (self.SB.period-1)*self.C.pdur*60
+                gtime_hl = toff + gtime
+                self.M.append(Message(message,tstart=gtime_hl,mtime=3,team=team,xoff=self.C.paneloffsets[team]))
+                # also record clock time for later summary
+                self.highlights[idx][0] = gtime
+                idx += 1
+            else:
+                break
         return idx #,SM
 
     # old code for original method of separate clips per play action
@@ -290,7 +303,7 @@ class Project():
                 break
             if re.search('guide',m):
                 m = re.sub(',','',m)
-            s=re.match('^.*guide\.([0-9]{1,5}\.?[0-9]{0,5})\"\>([A-Za-z0-9\s\:\#\-]*)',m)
+            s=re.match('^.*guide\.([0-9]{1,5}\.?[0-9]{0,5})\"\>([A-Za-z0-9\s\:\#\-]*)$',m)
             if s and ftext in s.group(2):
                 # remove keyword : if any
                 sgroup2=re.sub('^.*\:\s','',s.group(2))
@@ -311,10 +324,19 @@ class Project():
                 if re.search('\/property',m): # closing tag for the guides property
                     break
                 # read the guide comment
-                s=re.match('^.*comment\"\:\s\"([A-Za-z0-9\s\:\#\-]*)',m)
+                s=re.match('^.*comment\"\:\s\"([A-Za-z0-9\s\:\#\-\']*)',m)
                 if s and s.group(1).startswith(ftext): # startswith allows for extra text in the tag but this is sloppy
+                    # escape single quote if any
+                    # can no longer remember all the different thoughts that occurred to work this out
+                    # extra escapes are required to run a convert command via the python os.system
+                    # convert processes raw strings just like python, but decided to avoid that complication
+                    # and try to get it to go without raw stings
+                    # in the end, what's written here doesn't match the interactive python command i 
+                    # was using in python shell to work out the os.system convert command in scoreboard.py
+                    # but the graphic was still correct.
+                    sgroup1 = re.sub('\'','\\\\\\\\\'',s.group(1))
                     # remove the : if any
-                    sgroup1=re.sub('^.*\:\s','',s.group(1))
+                    sgroup1=re.sub('^.*\:\s','',sgroup1)
                     # if 'penalty' in ftext:
                     # replace opp with actual opponent's text
                     sgroup1 = re.sub('opp|OPP',self.opp,sgroup1)

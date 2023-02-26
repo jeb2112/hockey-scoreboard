@@ -6,7 +6,8 @@ import numpy as np
 ###############
 
 class Penalty():
-    def __init__(self,team,opp):
+    def __init__(self,team,opp,C):
+        self.C = C
         self.opp = opp #opponent team
         self.team = team # home team
         self.pTime = {self.team:[],self.opp:[]} # lists of time remaining of all current penalties
@@ -16,7 +17,7 @@ class Penalty():
         self.nP = {self.team:0,self.opp:0} # tally of the number of all current penalties
         self.pState = "pp" # ie the current state of penalties, doubles as prefix of graphic filename
         self.pStateTime = 0 # net time remaining in the current penalty state
-        self.panelOffset = 1125 # x offset for displaying penalty tag under appropriate team
+        # self.panelOffset = 1125 # x offset for displaying penalty tag under appropriate team
         
     # guide text =  eg tag a guide 'penalty: DMM2' for 2 min penalty
     def add(self,teamtime,currentTime):
@@ -48,19 +49,20 @@ class Penalty():
         self.updateState()
 
     # recalculate the state of current set of penalties
+    # offsets are hard-coded for 1920x1080 hidef case
     def updateState(self):
         if self.nP[self.team] > self.nP[self.opp]:
             self.penaltyTeam = self.team
             self.PPTeam=self.opp
-            self.panelOffset = 1315
+            self.panelOffset = self.C.paneloffsets[self.opp]
         elif self.nP[self.opp] > self.nP[self.team]:
             self.penaltyTeam = self.opp
             self.PPTeam=self.team
-            self.panelOffset = 1125
+            self.panelOffset = self.C.paneloffsets[self.team]
         elif self.nP[self.opp] == self.nP[self.team]:
             self.PPTeam=self.team
             self.penaltyTeam=self.opp
-            self.panelOffset = 1220 # 4on4 case. 
+            self.panelOffset = self.C.paneloffsets['none'] # 4on4 case. 
 
         # regular power play
         if self.nP[self.team] + self.nP[self.opp] == 1:

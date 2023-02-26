@@ -86,11 +86,15 @@ class timeNumeral():
                 # print command
                 os.system(command)
 
-# a text string and an associated amount of time to display it
+# a text string and an associated range of game time in seconds, to display it
+# eg 3 seconds at start of game by default.
 class Message():
-    def __init__(self,msg,time):
+    def __init__(self,msg,team=None,tstart=0,mtime=3,xoff=1125):
         self.Msg=msg
-        self.mTime=time
+        self.team = team
+        self.rTime=range(tstart,tstart+mtime,1) # run time of message in absolute game time
+        self.mTime = mtime
+        self.panelOffset = xoff
 
     def update(self):
         self.mTime -= 1
@@ -101,7 +105,13 @@ class Message():
 class TextMessage():
     pass
 
-        
+# miscellanceous hard-coded values, edit accordingly
+class Constants():
+    def __init__(self,opp):
+        self.pdur = 15 # period duration
+        self.paneloffsets = {'NYK':1125,opp:1315,'none':1220} # x offset for displaying message tag under appropriate team
+        self.res = '1280x720' # for low-res gameON. use '1920x1080' for camcorder
+
 # convenience class of functions for creating game summary
 # just an exercise in using a class __dict__ would be
 # better as an ordinary dict.

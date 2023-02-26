@@ -1,17 +1,19 @@
 import os
 import numpy as np
+from misc import Constants
 
 ######################
 # scoreBoard
 #####################
 
 class scoreBoard():
-    def __init__(self,team,opp,sdir,wdir,res='1920x1080'):
+    def __init__(self,team,opp,sdir,wdir,C):
+        self.C = C
         self.teamScore = 0 # goals for
         self.oppScore = 0 # goals against
         self.opp = opp
         self.team = team
-        self.res = res # '1920x1080' or lower video resolution 
+        self.res = self.C.res # '1920x1080' or lower video resolution 
         self.period = 1 # period number is 1-based
         self.wdir = wdir # project (working) directory with source clips
         self.sdir = sdir # source code directory with team logos, fixed sub-graphics etc
@@ -87,11 +89,13 @@ class scoreBoard():
         os.chdir(self.sdir)
         tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
         if penalty.PPTeam == self.team:
-            panelOffset = 1125
+            # panelOffset = 1125
+            panelOffset = self.C.paneloffsets[self.team]
         elif penalty.penaltyTeam == self.team:
-            panelOffset = 1315
+            # panelOffset = 1315
+            panelOffset = self.C.paneloffsets[self.opp]
         if penalty.pState == '4on4':
-            panelOffset = 1220 # 4on4 case
+            panelOffset = self.C.paneloffsets['none'] # 1220 # 4on4 case
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
         \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
@@ -126,7 +130,7 @@ class scoreBoard():
 
     # replacement to handle both penalty and regular
     # need to use for stop interval as well
-    def buildBoard(self,time,penalty=None,scoreMessage=None):
+    def buildBoard(self,time,penalty=None,scoreMessage=None,hMessage=None):
         os.chdir(self.sdir)
         tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
@@ -145,6 +149,14 @@ class scoreBoard():
             -blur 0x1 " + self.wdir + "/trun/tpng/scorePanelAnno.png"
                 os.system(c1)
                 c2 += " \( " + self.wdir + "/trun/tpng/scorePanelAnno.png -resize 37% -repage +1125+59 \) "
+        # need check for this no overlaps with any other message
+        if hMessage is not None:
+                c1 = "convert logo/scorePanel" + hMessage.team + ".png -fill white \
+            -pointsize 46 -annotate +40+50 \"" + hMessage.Msg + "\" \
+            -blur 0x1 " + self.wdir + "/trun/tpng/scorePanelAnno.png"
+                os.system(c1)
+                c2 += " \( " + self.wdir + "/trun/tpng/scorePanelAnno.png -resize 37% -repage +" + str(hMessage.panelOffset) + "+59 \) "
+
         c2 += " -background transparent -flatten "+ tfilename
         os.system(c2)
         # optionally crop the finished graphic for low-res video
@@ -154,15 +166,24 @@ class scoreBoard():
 
     # main method for building a set of scoreboard graphics per each second of a play
     # interval
-    def writeTimeFrames(self,trun,currentTime,penalty,scoreMessage=None,doboard=True):
+    def writeTimeFrames(self,trun,currentTime,penalty,scoreMessage=None,highlight=[],doboard=True):
         for t in range(currentTime,currentTime+trun):
+            hMessage = None
+            if len(highlight):
+                for h in highlight:
+                    if t+(self.period-1)*self.C.pdur*60 in h.rTime:
+                        hMessage = h
             if doboard:
-                self.buildBoard(t,penalty,scoreMessage)
+                self.buildBoard(t,penalty,scoreMessage,hMessage)
             if penalty.PP:
                 penalty.update()
             if scoreMessage is not None:
                 if scoreMessage.Msg:
                     scoreMessage.update()
+            # if len(highlight): # assumption two messages do not overlap in one run interval
+            #     for h in highlight:
+            #         if h.Msg:
+            #             h.update()
 
     # spacing and positioning above is all hard-coded for hidef video. optional crop for low-res < hidef video
     def cropRes(self,fname):
