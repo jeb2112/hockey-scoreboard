@@ -93,13 +93,16 @@ class Message():
         self.Msg=msg
         self.team = team
         self.rTime=range(tstart,tstart+mtime,1) # run time of message in absolute game time
-        self.mTime = mtime
+        self.mTime = mtime + 1 # for 1-based durations
         self.panelOffset = xoff
 
     def update(self):
         self.mTime -= 1
-        if self.mTime==0:
+        if self.mTime<=0:
             self.Msg=None
+            return None
+        else:
+            return self
 
 # create a text string on a transparent background
 class TextMessage():

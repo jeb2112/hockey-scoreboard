@@ -128,11 +128,12 @@ class scoreBoard():
             self.cropRes(tfilename)
         os.chdir(self.wdir)
 
-    # replacement to handle both penalty and regular
-    # need to use for stop interval as well
-    def buildBoard(self,time,penalty=None,scoreMessage=None,hMessage=None):
-        os.chdir(self.sdir)
-        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
+    # build one clock frame
+    # time: indexes the input fixed graphics for numerals
+    # fname,fnamesuffix: index the output graphics for individual clock frames
+    def buildBoard(self,time,fname,fnamesuffix,penalty=None,scoreMessage=None,hMessage=None):
+        os.chdir(self.sdir) # location of the input fixed graphics for numerals
+        tfilename = self.wdir + '/trun/tpng/' + fname + str(fnamesuffix).rjust(3,'0')+'.png'
         c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) "
         if penalty is not None:
@@ -164,18 +165,27 @@ class scoreBoard():
             self.cropRes(tfilename)
         os.chdir(self.wdir)
 
-    # main method for building a set of scoreboard graphics per each second of a play
+    # main method for building a set of scoreboard graphics once per each second of a play
     # interval
-    def writeTimeFrames(self,trun,currentTime,penalty,scoreMessage=None,highlight=[],doboard=True):
-        for t in range(currentTime,currentTime+trun):
+    def writeTimeFrames(self,trange,tinc,startTime,penalty,scoreMessage=None,highlight=[],doboard=True):
+        for i in range(startTime,startTime+trange):
+            t_highlight = i+(self.period-1)*self.C.pdur*60 # highlight message can persist from a run interval into a stop interval
+            if tinc:
+                t = i
+                fnameroot = 't' # root filename for runtime graphics. recycle once per period
+                fnamesuffix = t
+            else:
+                t = startTime
+                fnameroot = 'ts' # root filename for stoptime graphics. 
+                fnamesuffix = i - startTime # ie recycle filenames at each stop interval
             hMessage = None
             if len(highlight):
                 for h in highlight:
-                    if t+(self.period-1)*self.C.pdur*60 in h.rTime:
-                        hMessage = h
+                    if t_highlight in h.rTime:
+                        hMessage = h.update()
             if doboard:
-                self.buildBoard(t,penalty,scoreMessage,hMessage)
-            if penalty.PP:
+                self.buildBoard(t,fnameroot,fnamesuffix,penalty,scoreMessage,hMessage)
+            if penalty.PP and tinc:
                 penalty.update()
             if scoreMessage is not None:
                 if scoreMessage.Msg:

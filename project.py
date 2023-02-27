@@ -72,6 +72,7 @@ class Project():
                 intervalNum = [intervalNum]
         self.currentTime=0 # game clock time
         self.trueTime = w[0][0] # video time. assumes a dummy tag present at time 0
+
         # process in pairs of stop/run intervals
         for i in range(0,nInterval,2):
             trunfile = os.path.join('trun',"trun"+str(i).rjust(2,'0')+".mp4")
@@ -80,8 +81,11 @@ class Project():
             # process stop interval first
             # only build the scoreboard graphics for requested intervals
             if i in intervalNum:
+                doboard = trunfile
                 if os.path.exists(trunfile):
                     os.system("rm "+trunfile)
+            else:
+                doboard = False
             tstop = (w[i+1][0]-w[i][0])
             # check for goal in current stop interval.
             # goal markers should be only flagged in a stop interval
@@ -91,13 +95,21 @@ class Project():
             if pIndex < len(self.penalties):
                 pIndex = self.checkPenalty(tstop,pIndex)
             # TODO: need to combine addBoardTime functions into one function
-            if self.P.PP:
-                self.SB.addBoardTimePPNew(self.currentTime,self.P)
-            else:
-                self.SB.addBoardTime(self.currentTime)
 
-            c = commandS1
-            c = c + " -t "+str(tstop)+" -i " + trungraphic + command2 + " " + trunfile + " 2> /dev/null"
+            # if self.P.PP:
+            #     self.SB.addBoardTimePPNew(self.currentTime,self.P)
+            # else:
+            #     self.SB.addBoardTime(self.currentTime)
+
+            # build the individual per-second clock graphics
+            self.SB.writeTimeFrames(tstop,0,self.currentTime,self.P,SM,self.M,doboard)
+
+            # c = commandS1
+            c = commandR1
+            # c = c + " -t "+str(tstop)+" -i " + trungraphic + command2 + " " + trunfile + " 2> /dev/null"
+            c = c + '-start_number ' +str(0) + ' -i ' + os.path.join(self.projectdir,'trun','tpng','ts%03d.png') + ' -vframes ' + str(tstop) + ' '
+            c = c + command2 + trunfile + ' 2> /dev/null'
+
             self.trueTime += tstop
             # only run command if a requested interval
             if i in intervalNum:
@@ -120,14 +132,9 @@ class Project():
                 if hIndex < len(self.highlights):
                     hIndex = self.checkHighlight(trun,hIndex)
 
-                # only process a requested interval
-                if i in intervalNum:
-                    doboard = True
-                else:
-                    doboard = False
                 # build the individual per-second clock graphics
                 # TODO: resolve score message, highlight messages into one arg
-                self.SB.writeTimeFrames(trun,self.currentTime,self.P,SM,self.M,doboard)
+                self.SB.writeTimeFrames(trun,1,self.currentTime,self.P,SM,self.M,doboard)
 
                 c = commandR1
                 c = c + '-start_number ' +str(self.currentTime) + ' -i ' + os.path.join(self.projectdir,'trun','tpng','t%03d.png') + ' -vframes ' + str(trun) + ' '
