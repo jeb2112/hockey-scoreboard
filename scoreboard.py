@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from misc import Constants
 
 ######################
 # scoreBoard
@@ -69,65 +68,6 @@ class scoreBoard():
         os.system(c3)
         os.chdir(self.wdir)
 
-    # write a single time frame clock
-    def addBoardTime(self,time):
-        os.chdir(self.sdir)
-        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
-        c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
-        \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
-        -background transparent -flatten "+ tfilename
-        os.system(c2)
-        if int(self.res.split('x')[0]) < 1920:
-            self.cropRes(tfilename)
-        os.chdir(self.wdir)
-
-    # write a single time frame clock, with power play clock
-    # should call from addBOardTime instead of duplicating
-    # new version for penalty class
-    def addBoardTimePPNew(self,time,penalty):
-        # print "addBoardTime: ",time
-        os.chdir(self.sdir)
-        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
-        if penalty.PPTeam == self.team:
-            # panelOffset = 1125
-            panelOffset = self.C.paneloffsets[self.team]
-        elif penalty.penaltyTeam == self.team:
-            # panelOffset = 1315
-            panelOffset = self.C.paneloffsets[self.opp]
-        if penalty.pState == '4on4':
-            panelOffset = self.C.paneloffsets['none'] # 1220 # 4on4 case
-        c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
-        \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
-        \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
-        \( png/tpng2/pp"+str(penalty.pStateTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
-        -background transparent -flatten "+ tfilename
-        os.system(c2)
-        # optionally crop the finished graphic for low-res video
-        if int(self.res.split('x')[0]) < 1920:
-            self.cropRes(tfilename)
-        os.chdir(self.wdir)
-
-    # write a single time frame clock, with power play clock
-    # should call from addBOardTime instead of duplicating
-    def addBoardTimePP(self,time,ppTeam=None,ppTime=None):
-        os.chdir(self.sdir)
-        tfilename = self.wdir + '/trun/tpng/t' + str(time).rjust(3,'0')+'.png'
-        if ppTeam == self.team:
-            panelOffset = 1125
-        else:
-            panelOffset = 1315
-            ppTeam = self.opp
-        c2 = "convert " + self.wdir + "/trun/staticScoreBoard.png \
-        \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) \
-        \( logo/pp"+ppTeam+".png -resize 37% -repage +"+str(panelOffset)+"+59 \) \
-        \( " + self.wdir + "/trun/tpng/pp"+str(ppTime).rjust(3,'0')+".png -resize 50% -repage +"+str(panelOffset+120)+"+54 \) \
-        -background transparent -flatten "+ tfilename
-        os.system(c2)
-        # optionally crop the finished graphic for low-res video
-        if int(self.res.split('x')[0]) < 1920:
-            self.cropRes(tfilename)
-        os.chdir(self.wdir)
-
     # build one clock frame
     # time: indexes the input fixed graphics for numerals
     # fname,fnamesuffix: index the output graphics for individual clock frames
@@ -138,8 +78,6 @@ class scoreBoard():
         \( png/tpng2/t"+str(time).rjust(3,'0')+".png -resize 50% -repage +1554+21 \) "
         if penalty is not None:
             if penalty.PP:
-                # c2 += " \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(penalty.panelOffset)+"+59 \) \
-                # \( png/tpng2/pp"+str(penalty.pTime[penalty.penaltyTeam][0]).rjust(3,'0')+".png -resize 50% -repage +"+str(penalty.panelOffset+120)+"+54 \) "
                 c2 += " \( logo/"+penalty.pState+penalty.PPTeam+".png -resize 37% -repage +"+str(penalty.panelOffset)+"+59 \) \
                 \( png/tpng2/pp"+str(penalty.pStateTime).rjust(3,'0')+".png -resize 50% -repage +"+str(penalty.panelOffset+120)+"+54 \) "
         # need a check for this to override a penalty panel

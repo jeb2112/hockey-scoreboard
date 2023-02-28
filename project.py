@@ -96,11 +96,6 @@ class Project():
                 pIndex = self.checkPenalty(tstop,pIndex)
             # TODO: need to combine addBoardTime functions into one function
 
-            # if self.P.PP:
-            #     self.SB.addBoardTimePPNew(self.currentTime,self.P)
-            # else:
-            #     self.SB.addBoardTime(self.currentTime)
-
             # build the individual per-second clock graphics
             self.SB.writeTimeFrames(tstop,0,self.currentTime,self.P,SM,self.M,doboard)
 
@@ -189,7 +184,7 @@ class Project():
         else:
             return idx,None   
 
-    # messages other than goals or penalties. not tested yet.
+    # messages other than goals or penalties.
     def checkHighlight(self,trun,idx):
         while idx < len(self.highlights):
             if np.searchsorted([self.trueTime,self.trueTime+trun],self.highlights[idx][0])==1:
