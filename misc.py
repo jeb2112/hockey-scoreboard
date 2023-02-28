@@ -2,7 +2,7 @@ import os
 import re
 import numpy as np
 
-#########################
+#######################
 # miscellaneous classes
 #######################
 
@@ -187,43 +187,4 @@ class Transition():
 
     def __str__(self):
         return ''.join(self.transition)
-        
-# for automatically inserting transitions in a kdenlive project from separate clips of each play action
-# no longer needed in new mode of continuous clips
-class Dissolve(Transition):
-    def __init__(self,fname):
-        self.transition=open(fname).readlines()
-
-    def setTrack(self,a=3,b=4):
-        aindex = [self.transition.index(m) for m in iter(self.transition) if re.search('a_track',m)]
-        bindex = [self.transition.index(m) for m in iter(self.transition) if re.search('b_track',m)]
-        
-        self.transition[aindex] = re.sub('[0-9]',a,self.transition[aindex])
-        self.transition[bindex] = re.sub('[0-9]',b,self.transition[bindex])
-
-    def setID(self,id):
-        
-        self.transition[0] = re.sub('transition[0-9]{1,3}','transition'+str(id),self.transition[0])
-
-    def setReverse(self,r=1):
-        rindex = [self.transition.index(m) for m in iter(self.transition) if re.search('reverse',m)][0]
-        self.transition[rindex] = re.sub('-{0,1}[0-9]',str(r),self.transition[rindex])
-
-    def setOutIn(self,out,inn):
-        self.transition[0] = re.sub('out="[0-9]+','out="'+str(out),self.transition[0])
-        self.transition[0] = re.sub('in="[0-9]+','in="'+str(inn),self.transition[0])
-
-# for automatically inserting transitions in a kdenlive project from separate clips of each play action
-# no longer needed in new mode of continuous clips      
-class audioFade(Transition):
-    def __init__(self,fname_fade,fname_filter):
-        self.audioFilter=open(fname_filter,'r').readlines()
-        self.audioFade=open(fname_fade,'r').readlines()
-        # WKP-25849
-
-    def setFadeOut(self,out):
-        m1 = [m for m in self.audioFilter if re.search('fadeout',m)]
-        s1 = re.sub('out="[0-9]{1,4}','out="'+str(out),m1[0])
-        s2 = re.sub('in="[0-9]{1,4}','in="'+str(out-15),s1)
-        self.audioFilter[self.audioFilter.index(m1[0])] = s2
         

@@ -19,9 +19,6 @@ class Project():
         self.project = open(os.path.join(self.projectdir,self.projectname),'r').readlines()
         self.srcdir = '/home/src/tcom'
         self.Tags = dict(goals=[],scorers=[],penalties=[],highlights=[])
-        self.playlists = ['playlist3','playlist4'] # for the original mode of separate clips per play action
-        self.transitionList = self.parseTransitions() # existing transition numbers
-        self.producerIDList = self.parseProducerIDs() # existing producers id
         self.framerate = 25 # hard-coded but should get from kdenlive project file
         # times and powerplay attributes should be in scoreboard?
         self.currentTime = 0 # ie game/clock time
@@ -48,16 +45,10 @@ class Project():
         # optional IntervalNum list of intervals to process, list is
         # even/stop intervals
         cwd = os.getcwd()
-        kdendir = "/home/jbishop/kdenlive/"
-        # os.chdir(kdendir+self.projectdir)
 
-        commandS1 = "ffmpeg -loop 1 -r 1 -s " + self.res + " " # root of a stop interval command
         commandR1 = "ffmpeg -r 1 -s " + self.res + " " # root of a run interval command
         command2 = "-vcodec png -pix_fmt rgba " 
 
-        # should these be self. attributes.
-        scorerMessage=None
-        scorerMessageTime=0
         pIndex,gIndex,hIndex = 0,0,0
         
         # combine all whistles and faceoffs into a single list
@@ -76,7 +67,6 @@ class Project():
         # process in pairs of stop/run intervals
         for i in range(0,nInterval,2):
             trunfile = os.path.join('trun',"trun"+str(i).rjust(2,'0')+".mp4")
-            trungraphic = os.path.join(self.projectdir,'trun','tpng','t'+str(self.currentTime).rjust(3,'0')+'.png ')
             
             # process stop interval first
             # only build the scoreboard graphics for requested intervals
@@ -94,14 +84,11 @@ class Project():
             # check for start of a new powerplay, must be flagged in a stop interval
             if pIndex < len(self.penalties):
                 pIndex = self.checkPenalty(tstop,pIndex)
-            # TODO: need to combine addBoardTime functions into one function
 
             # build the individual per-second clock graphics
             self.SB.writeTimeFrames(tstop,0,self.currentTime,self.P,SM,self.M,doboard)
 
-            # c = commandS1
             c = commandR1
-            # c = c + " -t "+str(tstop)+" -i " + trungraphic + command2 + " " + trunfile + " 2> /dev/null"
             c = c + '-start_number ' +str(0) + ' -i ' + os.path.join(self.projectdir,'trun','tpng','ts%03d.png') + ' -vframes ' + str(tstop) + ' '
             c = c + command2 + trunfile + ' 2> /dev/null'
 
@@ -205,117 +192,7 @@ class Project():
             else:
                 break
         return idx #,SM
-
-    # old code for original method of separate clips per play action
-    # by default video 2 playlist 4 will get the dissolve transitions
-    # find the start and end of all blanks in video 2 playlist 4
-    # probably rename parseBlanks
-    def parseOverlaps(self):
-        for p in self.playlists: # currently just processing playlist4
-            blankEnd=[]
-            blankStart=[]
-            self.currentTime = 1
-            pindex = [self.project.index(m) for m in iter(self.project) if re.search('playlist id\=\"'+p+'\"\>$',m)][0]
-            I=itertools.islice(self.project.__iter__(),pindex,len(self.project))
-            for m2 in I:
-                if not re.search('^\s*\<\/playlist\>',m2):
-                    s2 = re.search('blank length\=\"([0-9]{1,5})',m2)
-                    if s2:
-                        blankStart.append(self.currentTime)
-                        self.currentTime += int(s2.group(1)) + 1
-                        blankEnd.append(self.currentTime)
-                        continue
-                    s2 = re.search('\<entry out\=\"([0-9]{1,5})\" producer=\"[0-9]{1,2}',m2)
-                    if s2:
-                        self.currentTime += int(s2.group(1)) + 0
-                        continue
-                else:
-                    break
-
-        return (blankStart,blankEnd)
-
-    # old code for separate clips per play action
-    # return Blanks from a particular playlist
-    def parseBlanks(self,playlist):
-        blankEnd=[]
-        blankStart=[]
-        self.currentTime = 1
-        pindex = [self.project.index(m) for m in iter(self.project) if re.search('playlist id\=\"'+playlist+'\"\>$',m)][0]
-        I=itertools.islice(self.project.__iter__(),pindex,len(self.project))
-        for m2 in I:
-            if not re.search('^\s*\<\/playlist\>',m2):
-                s2 = re.search('blank length\=\"([0-9]{1,5})',m2)
-                if s2:
-                    blankStart.append(self.currentTime)
-                    self.currentTime += int(s2.group(1)) + 1
-                    blankEnd.append(self.currentTime)
-                    continue
-                s2 = re.search('\<entry out\=\"([0-9]{1,5})\" producer=\"[0-9]{1,2}',m2)
-                if s2:
-                    self.currentTime += int(s2.group(1)) + 0
-                    continue
-            else:
-                break
-
-        return (blankStart,blankEnd)
-
-    # old code
-    def parseTransitions(self):
-        transitionList=[]
-        I=self.project.__iter__()
-        for m in I:
-            s=re.search('transition id\=\"transition([0-9]{1,3})',m)
-            if s:
-                # print m
-                transitionList.append(int(s.group(1)))
-        # transitionList = sorted(transitionList, key=lambda x: x[0])
-        # print transitionList
-        return transitionList
-
-    # old code
-    def parseProducerIDs(self):
-        IDList=[]
-        I=self.project.__iter__()
-        for m in I:
-            s=re.search('producer id\=\"([0-9]{1,2})\"',m)
-            if s:
-                # print m
-                IDList.append(int(s.group(1)))
-        IDList.sort()
-        return IDList
-
-    # old code
-    def parseList(self,retext):
-        fList=[]
-        I=self.project.__iter__()
-        for m in I:
-            s=re.search(retext,m)
-            if s:
-                # print m
-                fList.append(int(s.group(1)))
-        return fList
-        
-    # bug: need to check for accidental duplicate tags here
-    # original format kdenlive 19.something?? will not be used again
-    def parseGuides_19(self,ftext):
-        guideTimes=[]
-        I=self.project.__iter__()
-        for m in I:
-            if re.search('xml_retain',m):
-                break
-            if re.search('guide',m):
-                m = re.sub(',','',m)
-            s=re.match('^.*guide\.([0-9]{1,5}\.?[0-9]{0,5})\"\>([A-Za-z0-9\s\:\#\-]*)$',m)
-            if s and ftext in s.group(2):
-                # remove keyword : if any
-                sgroup2=re.sub('^.*\:\s','',s.group(2))
-                # if 'penalty' in ftext:
-                # replace opp with actual opponent's text
-                sgroup2 = re.sub('opp|OPP',self.opp,sgroup2)
-                guideTimes.append([int(round(float(s.group(1)))),sgroup2])
-        guideTimes = sorted(guideTimes, key=lambda x: x[0])
-        return guideTimes 
-    
+            
     # new xml project format in kdenilve 22.08
     def parseGuides(self,ftext):
         guideTimes=[]
@@ -356,96 +233,6 @@ class Project():
 
         guideTimes = sorted(guideTimes, key=lambda x: x[0])
         return guideTimes 
-
-    # old code from previous method of separate clips per play action
-    def shiftOverlap(self):
-        startShift=0
-        shiftInc=24
-        for p in self.playlists:
-            startShift+=12
-            currentShift=startShift
-            s1=[m for m in iter(self.project) if re.search('playlist id\=\"'+p+'\"\>$',m)]
-#            if p=='playlist3': # skip first blank
-#                I = itertools.islice(self.project.__iter__(),self.project.index(s1[0]),len(self.project))
-            I=itertools.islice(self.project.__iter__(),self.project.index(s1[0]),len(self.project))
-            for m2 in I:
-                # print m2
-                if not re.search('^\s*\<\/playlist\>',m2):
-                    s2 = re.search('blank length\=\"([0-9]{1,4})',m2)
-                    if s2:
-                        s2 = re.sub('[0-9]{1,4}',str(int(s2.group(1))-currentShift),m2,count=1)
-                        self.project[self.project.index(m2)] = s2
-                        if currentShift == 12:
-                            currentShift = 24
-                        continue
-                    s2 = re.search('\<entry out\=\"([0-9]{1,4})\" producer=\"[0-9]{1,2}\_',m2)
-                    if s2:
-                        s2 = re.sub('[0-9]{1,4}',str(int(s2.group(1))-currentShift),m2,count=1)
-                        #self.project[self.project.index(m2)] = s2               
-                        #currentShift += 5
-                        continue
-                else:
-                    break
-
-    # old code for stitching separate clips
-    def addAudioFade(self,af):
-        m1=[m for m in iter(self.project) if re.match('^\s\<playlist id\=\"main bin',m)][0] # extract list to string
-        I2=itertools.islice(self.project.__iter__(),self.project.index(m1),len(self.project))
-        for m2 in I2:
-            if re.search('^\s*\<\/playlist\>',m2):
-                break
-        self.project[self.project.index(m2):self.project.index(m2)] = af
-
-    # old code for stitching separate clips
-    def addAudioFilter(self,af):
-        for p in self.playlists:
-            m1=[m for m in iter(self.project) if re.match('^\s\<playlist id\=\"'+p+'\"\>',m)][0]
-            m2=m1
-            next_index = self.project.index(m2)
-            producer=True
-            while producer:
-                I2=itertools.islice(self.project.__iter__(),next_index,len(self.project))
-                for m2 in I2:
-                    if not re.search('^\s*\<\/playlist\>',m2):
-                        s2=re.search('entry\sout\=\"([0-9]{1,4})\"\sproducer\=\"[0-9]{1,2}\_'+p,m2)
-                        if s2:
-                            s2a = re.sub('\/>','>',m2)
-                            # can't get insert to work, inserts whole list as 1 item
-                            # and the below errors.
-                            # self.project = [self.project.insert(self.project.index(m2),x) for x in af]
-                            af.setFadeOut(int(s2.group(1)))
-                            self.project.insert(self.project.index(m2)+1,'  </entry>\n')
-                            self.project[self.project.index(m2)+1:self.project.index(m2)+1] = af.audioFilter # due to +1 /entry inserted, now 1 less (m2)
-                            next_index=self.project.index(m2)+1
-                            self.project[self.project.index(m2)]=s2a
-                            break
-                    else:
-                        producer=False
-                        break
-                
-    # old code for stitching separate clips
-    def addTransitions(self,transition):
-        (blankStart,blankEnd) = self.parseOverlaps()
-        tractor = ' </tractor>\n'
-        for i in range(0,len(blankStart)): 
-            if i>0: # start of first blank is the intro title slide
-                self.transitionList.append(self.transitionList[-1]+1)
-                transition.setID(self.transitionList[-1])
-                transition.setOutIn(blankStart[i]-1,blankStart[i]-12)
-                transition.setReverse(1)
-                self.project[self.project.index(tractor):self.project.index(tractor)]=transition.transition
-
-            self.transitionList.append(self.transitionList[-1]+1)
-            transition.setID(self.transitionList[-1])
-            # this should be +12 +1, but had to change for 05nov17??
-            # probably needed to switch back again for 25nov westhill, but
-            # fixed manually
-            transition.setOutIn(blankEnd[i]+10,blankEnd[i]-1)
-            # at the blank end, transition from track 3 to 4 is not reversed
-            # self.project[self.project.index(tractor):self.project.index(tractor)]=transition.transition
-            transition.setReverse(0)
-            self.project[self.project.index(tractor):self.project.index(tractor)]=transition.transition
-        pass
 
     def saveProject(self,fname=None):
         if fname==None:
